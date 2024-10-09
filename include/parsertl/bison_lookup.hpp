@@ -196,7 +196,7 @@ namespace parsertl
                 static_cast<int>(tables_struct::yyconsts::YYNTOKENS)] +
                 results_.stack.back();
             // Drop through to go_to:
-            // [[fallthrough]]; (C++17)
+            [[fallthrough]];
         }
         case action::go_to:
             if (0 <= results_.entry.param &&
