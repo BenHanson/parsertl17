@@ -106,6 +106,19 @@ namespace parsertl
             return _iter;
         }
 
+        std::pair<std::size_t, std::size_t> line_column(typename lexer_iterator::
+            data_iterator& start) const
+        {
+            const std::size_t line =
+                1 + std::count(start, _iter->first, '\n');
+            const typename lexer_iterator::value_type::char_type
+                endl[] = { '\n' };
+            const std::size_t column = _iter->first - std::find_end(start,
+                _iter->first, endl, endl + 1);
+
+            return std::make_pair(line, column);
+        }
+
     private:
         lexer_iterator _iter;
         basic_match_results<sm_type> _results;
