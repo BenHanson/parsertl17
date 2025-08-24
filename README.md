@@ -21,9 +21,9 @@ int main()
         lexertl::state_machine lsm;
 
         grules.token("Int Name");
-        grules.push("list", "(Name) "
-            "| list ',' (Int) "
-            "| list ',' (Name)");
+        grules.push("list", "(item) "
+            "| list ',' (item)");
+        grules.push("item", "Int | Name");
         parsertl::generator::build(grules, gsm);
         lrules.push("[A-Z_a-z]\\w*", grules.token_id("Name"));
         lrules.push("\\d+", grules.token_id("Int"));
