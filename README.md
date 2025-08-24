@@ -15,7 +15,7 @@ int main()
 {
     try
     {
-        parsertl::rules grules(parsertl::enable_captures);
+        parsertl::rules grules(parsertl::rule_flags::enable_captures);
         parsertl::state_machine gsm;
         lexertl::rules lrules;
         lexertl::state_machine lsm;
@@ -36,7 +36,7 @@ int main()
         using capture_vector = std::vector<std::pair<const char *, const char *>>;
         std::vector<capture_vector> captures;
 
-        if (parsertl::match(iter, gsm, captures)
+        if (parsertl::match(iter, gsm, captures))
         {
             auto cvi = captures.cbegin();
             auto cve = captures.cend();
