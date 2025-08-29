@@ -7,9 +7,14 @@
 #define PARSERTL_SEARCH_ITERATOR_HPP
 
 #include "capture.hpp"
-#include <lexertl/iterator.hpp>
-#include "match_results.hpp"
 #include "search.hpp"
+#include "state_machine.hpp"
+
+#include <lexertl/iterator.hpp>
+
+#include <cstdint>
+#include <iterator>
+#include <vector>
 
 namespace parsertl
 {
@@ -61,17 +66,19 @@ namespace parsertl
             return &_captures;
         }
 
-        bool operator ==(const search_iterator& rhs_) const
+        friend bool operator ==(const search_iterator& lhs_,
+            const search_iterator& rhs_)
         {
-            return _sm == rhs_._sm &&
-                (_sm == nullptr ?
+            return lhs_._sm == rhs_._sm &&
+                (lhs_._sm == nullptr ?
                 true :
-                _captures == rhs_._captures);
+                    lhs_._captures == rhs_._captures);
         }
 
-        bool operator !=(const search_iterator& rhs_) const
+        friend bool operator !=(const search_iterator& lhs_,
+            const search_iterator& rhs_)
         {
-            return !(*this == rhs_);
+            return !(lhs_ == rhs_);
         }
 
     private:

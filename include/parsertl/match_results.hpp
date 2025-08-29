@@ -6,8 +6,10 @@
 #ifndef PARSERTL_MATCH_RESULTS_HPP
 #define PARSERTL_MATCH_RESULTS_HPP
 
+#include "enums.hpp"
 #include "runtime_error.hpp"
 #include "state_machine.hpp"
+
 #include <vector>
 
 namespace parsertl
@@ -113,11 +115,12 @@ namespace parsertl
             return sm._rules[index_]._rhs.size();
         }
 
-        bool operator ==(const basic_match_results& rhs_) const
+        friend bool operator ==(const basic_match_results& lhs_,
+            const basic_match_results& rhs_)
         {
-            return stack == rhs_.stack &&
-                token_id == rhs_.token_id &&
-                entry == rhs_.entry;
+            return lhs_.stack == rhs_.stack &&
+                lhs_.token_id == rhs_.token_id &&
+                lhs_.entry == rhs_.entry;
         }
     };
 

@@ -8,6 +8,7 @@
 
 #include <iterator>
 #include <string>
+#include <string_view>
 
 namespace parsertl
 {
@@ -31,10 +32,10 @@ namespace parsertl
         {
         }
 
-        bool operator==(const capture& rhs_) const
+        friend bool operator==(const capture& lhs_, const capture& rhs_)
         {
-            return first == rhs_.first &&
-                second == rhs_.second;
+            return lhs_.first == rhs_.first &&
+                lhs_.second == rhs_.second;
         }
 
         bool empty() const

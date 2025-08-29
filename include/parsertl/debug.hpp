@@ -7,8 +7,13 @@
 #define PARSERTL_DEBUG_HPP
 
 #include "dfa.hpp"
-#include <ostream>
 #include "rules.hpp"
+
+#include <map>
+#include <ostream>
+#include <set>
+#include <string>
+#include <utility>
 
 namespace parsertl
 {
@@ -239,15 +244,10 @@ namespace parsertl
                     symbols_[terminals_ + lhs_iter_->_lhs];
 
                 lhs_iter_ = grammar_.cbegin() + index_;
-                stream_ << static_cast<char_type>('\n');
-
-                for (std::size_t i_ = 0, size_ = lhs_.size();
-                    i_ < size_; ++i_)
-                {
-                    stream_ << static_cast<char_type>(' ');
-                }
-
-                stream_ << static_cast<char_type>('|');
+                stream_ << static_cast<char_type>('\n') <<
+                    string(lhs_.size(),
+                        static_cast<char_type>(' ')) <<
+                    static_cast<char_type>('|');
             }
         }
 

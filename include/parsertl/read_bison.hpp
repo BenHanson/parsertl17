@@ -6,10 +6,23 @@
 #ifndef PARSERTL_READ_BISON_HPP
 #define PARSERTL_READ_BISON_HPP
 
+#include "enums.hpp"
 #include "generator.hpp"
 #include "lookup.hpp"
 #include "match_results.hpp"
+#include "rules.hpp"
+#include "runtime_error.hpp"
+#include "state_machine.hpp"
 #include "token.hpp"
+
+#include <lexertl/generator.hpp>
+#include <lexertl/iterator.hpp>
+#include <lexertl/match_results.hpp>
+#include <lexertl/rules.hpp>
+#include <lexertl/state_machine.hpp>
+
+#include <sstream>
+#include <string>
 
 namespace parsertl
 {

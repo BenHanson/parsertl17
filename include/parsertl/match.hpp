@@ -6,8 +6,11 @@
 #ifndef PARSERTL_MATCH_HPP
 #define PARSERTL_MATCH_HPP
 
+#include "enums.hpp"
 #include "lookup.hpp"
+#include "match_results.hpp"
 #include "parse.hpp"
+#include "token.hpp"
 
 namespace parsertl
 {

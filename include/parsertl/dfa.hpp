@@ -28,15 +28,15 @@ namespace parsertl
         {
         }
 
-        bool operator==(const cursor& rhs_) const
+        friend bool operator==(const cursor& lhs_, const cursor& rhs_)
         {
-            return _id == rhs_._id && _index == rhs_._index;
+            return lhs_._id == rhs_._id && lhs_._index == rhs_._index;
         }
 
-        bool operator<(const cursor& rhs_) const
+        friend bool operator<(const cursor& lhs_, const cursor& rhs_)
         {
-            return _id < rhs_._id ||
-                (_id == rhs_._id && _index < rhs_._index);
+            return lhs_._id < rhs_._id ||
+                (lhs_._id == rhs_._id && lhs_._index < rhs_._index);
         }
     };
 

@@ -6,10 +6,17 @@
 #ifndef PARSERTL_ITERATOR_HPP
 #define PARSERTL_ITERATOR_HPP
 
-#include <lexertl/iterator.hpp>
+#include "enums.hpp"
 #include "lookup.hpp"
 #include "match_results.hpp"
+#include "state_machine.hpp"
 #include "token.hpp"
+
+#include <lexertl/iterator.hpp>
+
+#include <cstdint>
+#include <iterator>
+#include <utility>
 
 namespace parsertl
 {
@@ -89,16 +96,16 @@ namespace parsertl
             return &_results;
         }
 
-        bool operator ==(const iterator& rhs_) const
+        friend bool operator ==(const iterator& lhs_, const iterator& rhs_)
         {
-            return _sm == rhs_._sm &&
-                (_sm == nullptr ? true :
-                    _results == rhs_._results);
+            return lhs_._sm == rhs_._sm &&
+                (lhs_._sm == nullptr ? true :
+                    lhs_._results == rhs_._results);
         }
 
-        bool operator !=(const iterator& rhs_) const
+        friend bool operator !=(const iterator& lhs_, const iterator& rhs_)
         {
-            return !(*this == rhs_);
+            return !(lhs_ == rhs_);
         }
 
         lexer_iterator lexer_iter() const
@@ -112,9 +119,9 @@ namespace parsertl
             const std::size_t line =
                 1 + std::count(start, _iter->first, '\n');
             const typename lexer_iterator::value_type::char_type
-                endl[] = { '\n' };
+                endl = { '\n' };
             const std::size_t column = _iter->first - std::find_end(start,
-                _iter->first, endl, endl + 1);
+                _iter->first, &endl, &endl + 1);
 
             return std::make_pair(line, column);
         }

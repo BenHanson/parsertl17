@@ -10,13 +10,29 @@
 #include "ebnf_tables.hpp"
 #include "enum_operator.hpp"
 #include "enums.hpp"
-#include <lexertl/generator.hpp>
-#include <lexertl/iterator.hpp>
 #include "match_results.hpp"
 #include "narrow.hpp"
 #include "runtime_error.hpp"
-#include <lexertl/stream_num.hpp>
+#include "state_machine.hpp"
 #include "token.hpp"
+
+#include <lexertl/generator.hpp>
+#include <lexertl/iterator.hpp>
+#include <lexertl/match_results.hpp>
+#include <lexertl/rules.hpp>
+#include <lexertl/state_machine.hpp>
+#include <lexertl/stream_num.hpp>
+
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <map>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace parsertl
 {
@@ -55,16 +71,16 @@ namespace parsertl
             {
             }
 
-            bool operator<(const symbol& rhs_) const
+            friend bool operator<(const symbol& lhs_, const symbol& rhs_)
             {
-                return _type < rhs_._type ||
+                return lhs_._type < rhs_._type ||
                     // Added parenthesis to allow -Wall on clang++
-                    (_type == rhs_._type && _id < rhs_._id);
+                    (lhs_._type == rhs_._type && lhs_._id < rhs_._id);
             }
 
-            bool operator==(const symbol& rhs_) const
+            friend bool operator==(const symbol& lhs_, const symbol& rhs_)
             {
-                return _type == rhs_._type && _id == rhs_._id;
+                return lhs_._type == rhs_._type && lhs_._id == rhs_._id;
             }
         };
 
@@ -83,16 +99,17 @@ namespace parsertl
                 symbol_vector _symbols;
                 string _prec;
 
-                bool operator==(const rhs& rhs_) const
+                friend bool operator==(const rhs& lhs_, const rhs& rhs_)
                 {
-                    return _symbols == rhs_._symbols &&
-                        _prec == rhs_._prec;
+                    return lhs_._symbols == rhs_._symbols &&
+                        lhs_._prec == rhs_._prec;
                 }
 
-                bool operator<(const rhs& rhs_) const
+                friend bool operator<(const rhs& lhs_, const rhs& rhs_)
                 {
-                    return _symbols < rhs_._symbols ||
-                        (_symbols == rhs_._symbols && _prec < rhs_._prec);
+                    return lhs_._symbols < rhs_._symbols ||
+                        (lhs_._symbols == rhs_._symbols &&
+                            lhs_._prec < rhs_._prec);
                 }
             };
 
@@ -330,9 +347,10 @@ namespace parsertl
             typename token_t::token_vector productions_;
             std::stack<string> rhs_stack_;
             std::stack<std::pair<string, string>> new_rules_;
-            static const char_type empty_or_[] =
+            static const std::array<char_type, 10> empty_or_ =
             { '%', 'e', 'm', 'p', 't', 'y', ' ', '|', ' ', '\0' };
-            static const char_type or_[] = { ' ', '|', ' ', '\0' };
+            static const std::array<char_type, 4> or_ =
+            { ' ', '|', ' ', '\0' };
 
             bison_next(_ebnf_tables, iter_, results_);
 
@@ -345,7 +363,7 @@ namespace parsertl
                     {
                     case ebnf_indexes::rhs_or_2_idx:
                     {
-                        // rhs_or: rhs_or '|' opt_list
+                        // rhs_or: rhs_or or opt_list
                         const std::size_t size_ =
                             _ebnf_tables.yyr2[results_.entry.param];
                         const std::size_t idx_ = productions_.size() - size_;
@@ -426,7 +444,7 @@ namespace parsertl
                         lexertl::stream_num(counter_, ss_);
                         pair_.first = lhs_ + char_type('_') + ss_.str();
                         _generated_rules.insert(pair_.first);
-                        pair_.second = empty_or_ + rhs_stack_.top();
+                        pair_.second = &empty_or_.front() + rhs_stack_.top();
                         rhs_stack_.top() = pair_.first;
                         new_rules_.push(pair_);
                         break;
@@ -444,7 +462,7 @@ namespace parsertl
                         lexertl::stream_num(counter_, ss_);
                         pair_.first = lhs_ + char_type('_') + ss_.str();
                         _generated_rules.insert(pair_.first);
-                        pair_.second = empty_or_ + pair_.first +
+                        pair_.second = &empty_or_.front() + pair_.first +
                             char_type(' ') + rhs_stack_.top();
                         rhs_stack_.top() = pair_.first;
                         new_rules_.push(pair_);
@@ -463,7 +481,7 @@ namespace parsertl
                         lexertl::stream_num(counter_, ss_);
                         pair_.first = lhs_ + char_type('_') + ss_.str();
                         _generated_rules.insert(pair_.first);
-                        pair_.second = rhs_stack_.top() + or_ +
+                        pair_.second = rhs_stack_.top() + &or_.front() +
                             pair_.first + char_type(' ') + rhs_stack_.top();
                         rhs_stack_.top() = pair_.first;
                         new_rules_.push(pair_);
@@ -702,23 +720,23 @@ namespace parsertl
                 }
             }
 
-            static const char_type accept_[] =
+            static const std::array<char_type, 8> accept_ =
             {
                 '$', 'a', 'c', 'c', 'e', 'p', 't', '\0'
             };
 
             // Validate start rule
-            if (_non_terminals.find(accept_) == _non_terminals.end())
+            if (_non_terminals.find(&accept_.front()) == _non_terminals.end())
             {
-                string rhs_ = _start;
+                const string rhs_ = _start;
 
-                push_production(accept_, rhs_);
+                push_production(&accept_.front(), rhs_);
                 _grammar.back()._rhs._symbols.
                     emplace_back(symbol::type::TERMINAL,
                     insert_terminal(string(1, '$')));
             }
 
-            _start = accept_;
+            _start = &accept_.front();
         }
 
         const production_vector& grammar() const

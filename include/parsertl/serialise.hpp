@@ -6,9 +6,11 @@
 #ifndef PARSERTL_SERIALISE_HPP
 #define PARSERTL_SERIALISE_HPP
 
+#include "enums.hpp"
 #include "runtime_error.hpp"
-#include <lexertl/serialise.hpp>
 #include "state_machine.hpp"
+
+#include <lexertl/serialise.hpp>
 
 namespace parsertl
 {

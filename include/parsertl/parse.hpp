@@ -6,7 +6,9 @@
 #ifndef PARSERTL_PARSE_HPP
 #define PARSERTL_PARSE_HPP
 
+#include "enums.hpp"
 #include "match_results.hpp"
+
 #include <vector>
 
 namespace parsertl

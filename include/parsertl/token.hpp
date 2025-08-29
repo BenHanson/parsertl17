@@ -7,6 +7,7 @@
 #define PARSERTL_TOKEN_HPP
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace parsertl

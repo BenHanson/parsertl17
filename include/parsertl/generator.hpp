@@ -7,10 +7,21 @@
 #define PARSERTL_GENERATOR_HPP
 
 #include "dfa.hpp"
-#include "narrow.hpp"
+#include "enums.hpp"
 #include "nt_info.hpp"
 #include "rules.hpp"
+#include "runtime_error.hpp"
 #include "state_machine.hpp"
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace parsertl
 {
@@ -40,14 +51,14 @@ namespace parsertl
             }
 
             // This operator is tuned specifically for new_grammar_ lookup only
-            bool operator<(const prod& rhs_) const
+            friend bool operator<(const prod& lhs_, const prod& rhs_)
             {
-                return _production->_lhs < rhs_._production->_lhs ||
-                    (_production->_lhs == rhs_._production->_lhs &&
-                    _production->_rhs < rhs_._production->_rhs) ||
-                    (_production->_lhs == rhs_._production->_lhs &&
-                    _production->_rhs == rhs_._production->_rhs &&
-                    _rhs_indexes.back()._index <
+                return lhs_._production->_lhs < rhs_._production->_lhs ||
+                    (lhs_._production->_lhs == rhs_._production->_lhs &&
+                        lhs_._production->_rhs < rhs_._production->_rhs) ||
+                    (lhs_._production->_lhs == rhs_._production->_lhs &&
+                        lhs_._production->_rhs == rhs_._production->_rhs &&
+                        lhs_._rhs_indexes.back()._index <
                         rhs_._rhs_indexes.back()._index);
             }
         };
@@ -204,11 +215,8 @@ namespace parsertl
             {
                 const dfa_state& state_ = dfa_[sidx_];
 
-                for (std::size_t cidx_ = 0, csize_ = state_._closure.size();
-                    cidx_ != csize_; ++cidx_)
+                for (const cursor& pair_ : state_._closure)
                 {
-                    const cursor& pair_ = state_._closure[cidx_];
-
                     if (pair_._index != 0) continue;
 
                     const production& production_ = grammar_[pair_._id];
@@ -223,13 +231,8 @@ namespace parsertl
 
                         prod_._lhs_indexes._id = sidx_;
 
-                        for (std::size_t tidx_ = 0,
-                            tsize_ = state_._transitions.size();
-                            tidx_ != tsize_; ++tidx_)
+                        for (const cursor& pr_ : state_._transitions)
                         {
-                            const cursor& pr_ =
-                                state_._transitions[tidx_];
-
                             if (pr_._id == id_)
                             {
                                 prod_._lhs_indexes._index = pr_._index;
@@ -263,25 +266,18 @@ namespace parsertl
                         prod_._rhs_indexes.emplace_back(sidx_, sidx_);
                     }
 
-                    for (std::size_t ridx_ = 0,
-                        rsize_ = production_._rhs._symbols.size();
-                        ridx_ != rsize_; ++ridx_)
+                    for (const symbol& symbol_ : production_._rhs._symbols)
                     {
-                        const symbol& symbol_ =
-                            production_._rhs._symbols[ridx_];
                         const dfa_state& st_ = dfa_[index_];
 
                         prod_._rhs_indexes.emplace_back(index_, 0);
 
-                        for (std::size_t tidx_ = 0,
-                            tsize_ = st_._transitions.size();
-                            tidx_ != tsize_; ++tidx_)
+                        for (const cursor& pr_ : st_._transitions)
                         {
                             const std::size_t id_ =
                                 symbol_._type == symbol::type::TERMINAL ?
                                 symbol_._id :
                                 terminals_.size() + symbol_._id;
-                            const cursor& pr_ = st_._transitions[tidx_];
 
                             if (pr_._id == id_)
                             {
@@ -368,12 +364,9 @@ namespace parsertl
                 for (const auto& prod_ : grammar_)
                 {
                     nt_info& lhs_info_ = nt_info_[prod_._lhs];
-                    const std::size_t rhs_size_ = prod_._rhs.size();
 
-                    for (std::size_t i_ = 0; i_ < rhs_size_; i_++)
+                    for (const symbol& symbol_ : prod_._rhs)
                     {
-                        const symbol& symbol_ = prod_._rhs[i_];
-
                         if (symbol_._type == symbol::type::TERMINAL)
                         {
                             progress_ |=
@@ -750,7 +743,7 @@ namespace parsertl
             const grammar& grammar_ = rules_.grammar();
             const token_info_vector& tokens_info_ = rules_.tokens_info();
             const std::size_t terminals_ = tokens_info_.size();
-            static const char* actions_[] =
+            static const std::array<const char*, 5> actions_ =
             { "ERROR", "SHIFT", "REDUCE", "GOTO", "ACCEPT" };
             bool error_ = false;
 

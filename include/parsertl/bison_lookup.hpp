@@ -6,7 +6,7 @@
 #ifndef PARSERTL_BISON_LOOKUP_HPP
 #define PARSERTL_BISON_LOOKUP_HPP
 
-#include "match_results.hpp"
+#include "enums.hpp"
 
 namespace parsertl
 {

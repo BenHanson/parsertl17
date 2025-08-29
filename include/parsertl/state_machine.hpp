@@ -9,6 +9,9 @@
 #include <algorithm>
 #include <cstdint>
 #include "enums.hpp"
+
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace parsertl
@@ -68,9 +71,9 @@ namespace parsertl
                 param = static_cast<id_type>(error_type::syntax_error);
             }
 
-            bool operator ==(const entry& rhs_) const
+            friend bool operator ==(const entry& lhs_, const entry& rhs_)
             {
-                return action == rhs_.action && param == rhs_.param;
+                return lhs_.action == rhs_.action && lhs_.param == rhs_.param;
             }
         };
 
