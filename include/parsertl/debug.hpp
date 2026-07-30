@@ -37,8 +37,7 @@ namespace parsertl
             rules_.symbols(symbols_);
 
             // Skip EOI token
-            for (std::size_t idx_ = 1, size_ = tokens_info_.size();
-                idx_ < size_; ++idx_)
+            for (std::size_t idx_ = 1; idx_ < terminals_; ++idx_)
             {
                 const token_info& token_info_ = tokens_info_[idx_];
                 token_prec_assoc info_(token_info_._precedence,
@@ -104,7 +103,7 @@ namespace parsertl
         static void dump(const rules& rules_, const dfa& dfa_, ostream& stream_)
         {
             const production_vector& grammar_ = rules_.grammar();
-            const std::size_t terminals_ = rules_.tokens_info().size();
+            const std::size_t terminals_ = rules_.terminals_count();
             string_vector symbols_;
 
             rules_.symbols(symbols_);

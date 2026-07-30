@@ -8,6 +8,7 @@
 
 #include "dfa.hpp"
 #include "enums.hpp"
+#include "narrow.hpp"
 #include "nt_info.hpp"
 #include "rules.hpp"
 #include "runtime_error.hpp"
@@ -112,7 +113,7 @@ namespace parsertl
             rules_.validate();
 
             const grammar& grammar_ = rules_.grammar();
-            const std::size_t terminals_ = rules_.tokens_info().size();
+            const std::size_t terminals_ = rules_.terminals_count();
             const std::size_t start_ = rules_.start();
             hash_map hash_map_;
 
@@ -202,13 +203,9 @@ namespace parsertl
             using trie = std::pair<std::size_t, cursor>;
             using trie_map = std::map<trie, std::size_t>;
             const grammar& grammar_ = rules_.grammar();
-            string_vector terminals_;
-            string_vector non_terminals_;
+            const auto terminals_ = rules_.terminals_count();
             const std::size_t start_ = rules_.start();
             trie_map map_;
-
-            rules_.terminals(terminals_);
-            rules_.non_terminals(non_terminals_);
 
             for (std::size_t sidx_ = 0, ssize_ = dfa_.size();
                 sidx_ != ssize_; ++sidx_)
@@ -222,12 +219,13 @@ namespace parsertl
                     const production& production_ = grammar_[pair_._id];
                     prod prod_;
 
+                    prod_._rhs.reserve(production_._rhs._symbols.size());
+                    prod_._rhs_indexes.reserve(production_._rhs._symbols.size());
                     prod_._production = &production_;
 
                     if (production_._lhs != start_)
                     {
-                        const std::size_t id_ = terminals_.size() +
-                            production_._lhs;
+                        const std::size_t id_ = terminals_ + production_._lhs;
 
                         prod_._lhs_indexes._id = sidx_;
 
@@ -269,16 +267,15 @@ namespace parsertl
                     for (const symbol& symbol_ : production_._rhs._symbols)
                     {
                         const dfa_state& st_ = dfa_[index_];
+                        const std::size_t id_ =
+                            symbol_._type == symbol::type::TERMINAL ?
+                            symbol_._id :
+                            terminals_ + symbol_._id;
 
                         prod_._rhs_indexes.emplace_back(index_, 0);
 
                         for (const cursor& pr_ : st_._transitions)
                         {
-                            const std::size_t id_ =
-                                symbol_._type == symbol::type::TERMINAL ?
-                                symbol_._id :
-                                terminals_.size() + symbol_._id;
-
                             if (pr_._id == id_)
                             {
                                 index_ = pr_._index;
@@ -309,13 +306,11 @@ namespace parsertl
                         }
                     }
 
-                    new_grammar_.emplace_back();
-                    new_grammar_.back().swap(prod_);
+                    new_grammar_.push_back(std::move(prod_));
                 }
             }
 
-            new_nt_info_.assign(map_.size(),
-                nt_info(rules_.tokens_info().size()));
+            new_nt_info_.assign(map_.size(), nt_info(terminals_));
         }
 
         // http://www.sqlite.org/src/artifact?ci=trunk&filename=tool/lemon.c
@@ -505,7 +500,7 @@ namespace parsertl
         {
             const grammar& grammar_ = rules_.grammar();
             const std::size_t start_ = rules_.start();
-            const std::size_t terminals_ = rules_.tokens_info().size();
+            const std::size_t terminals_ = rules_.terminals_count();
             const std::size_t non_terminals_ = rules_.nt_locations().size();
             string_vector symbols_;
             const std::size_t columns_ = terminals_ + non_terminals_;
@@ -592,7 +587,7 @@ namespace parsertl
         static void copy_rules(const rules& rules_, sm& sm_)
         {
             const grammar& grammar_ = rules_.grammar();
-            const std::size_t terminals_ = rules_.tokens_info().size();
+            const std::size_t terminals_ = rules_.terminals_count();
 
             for (const production& production_ : grammar_)
             {
