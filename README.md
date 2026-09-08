@@ -66,7 +66,7 @@ int main()
 }
 ```
 This outputs:
-```cpp
+```
 One, 2, Three, Four
 One
 2
