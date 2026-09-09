@@ -1,6 +1,8 @@
 parsertl17: The Modular Parser Generator
 ========
 
+parsertl is a header-only library for constructing parsers at runtime.
+
 As well as normal parsing, it is now possible to use the library as a more powerful regex.
 
 ### Match a string with captures
