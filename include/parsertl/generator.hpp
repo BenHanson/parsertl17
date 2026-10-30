@@ -490,6 +490,7 @@ namespace parsertl
         using size_t_vector = std::vector<std::size_t>;
         using hash_map = std::map<std::size_t, size_t_vector>;
         using string_vector = typename rules::string_vector;
+        using string_view = typename rules::string_view;
         using symbol = typename rules::symbol;
         using token_info = typename rules::token_info;
         using token_info_vector = typename rules::token_info_vector;
@@ -913,7 +914,7 @@ namespace parsertl
             std::size_t index_ = 0;
 
             ss_ << " (";
-            narrow(symbols_[terminals_ + production_._lhs].c_str(), ss_);
+            narrow(symbols_[terminals_ + production_._lhs], ss_);
             ss_ << " -> ";
 
             if (sym_iter_ != sym_end_)
@@ -925,7 +926,7 @@ namespace parsertl
 
                 if (index_ == dot_) ss_ << ". ";
 
-                narrow(symbols_[id_].c_str(), ss_);
+                narrow(symbols_[id_], ss_);
                 ++sym_iter_;
                 ++index_;
             }
@@ -941,7 +942,7 @@ namespace parsertl
 
                 if (index_ == dot_) ss_ << ". ";
 
-                narrow(symbols_[id_].c_str(), ss_);
+                narrow(symbols_[id_], ss_);
             }
 
             ss_ << ')';

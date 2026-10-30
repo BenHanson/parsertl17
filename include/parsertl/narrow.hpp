@@ -7,17 +7,25 @@
 #define PARSERTL_NARROW_HPP
 
 #include <sstream>
+#include <string>
+#include <string_view>
 
 namespace parsertl
 {
     template<typename char_type>
-    void narrow(const char_type* str_, std::ostringstream& ss_)
+    void narrow(const std::basic_string_view<char_type>& vw_, std::ostringstream& ss_)
     {
-        while (*str_)
+        for (const char_type c_ : vw_)
         {
             // Safe to simply cast to char when string only contains ASCII.
-            ss_ << static_cast<char>(*str_++);
+            ss_ << static_cast<char>(c_);
         }
+    }
+
+    template<typename char_type>
+    void narrow(const std::basic_string<char_type>& str_, std::ostringstream& ss_)
+    {
+        narrow(std::basic_string_view<char_type>(str_), ss_);
     }
 }
 

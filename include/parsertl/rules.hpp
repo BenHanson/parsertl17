@@ -31,6 +31,7 @@
 #include <sstream>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -54,6 +55,7 @@ namespace parsertl
             std::vector<std::pair<std::size_t, capture_vector>>;
         using nt_location_vector = std::vector<nt_location>;
         using string = std::basic_string<char_type>;
+        using string_view = std::basic_string_view<char_type>;
         using string_id_type_map = std::map<string, id_type>;
         using string_id_type_pair = std::pair<string, id_type>;
         using string_vector = std::vector<string>;
@@ -224,67 +226,35 @@ namespace parsertl
             _flags = flags_;
         }
 
-        void token(const char_type* names_)
+        void token(const string_view& names_)
         {
-            lexer_iterator iter_(names_, str_end(names_), _token_lexer);
-
-            token(iter_, 0, associativity::token_assoc, "token");
-        }
-
-        void token(const string& names_)
-        {
-            lexer_iterator iter_(names_.c_str(), names_.c_str() + names_.size(),
+            lexer_iterator iter_(names_.data(), names_.data() + names_.size(),
                 _token_lexer);
 
             token(iter_, 0, associativity::token_assoc, "token");
         }
 
-        void left(const char_type* names_)
+        void left(const string_view& names_)
         {
-            lexer_iterator iter_(names_, str_end(names_), _token_lexer);
-
-            token(iter_, _next_precedence, associativity::left_assoc, "left");
-            ++_next_precedence;
-        }
-
-        void left(const string& names_)
-        {
-            lexer_iterator iter_(names_.c_str(), names_.c_str() + names_.size(),
+            lexer_iterator iter_(names_.data(), names_.data() + names_.size(),
                 _token_lexer);
 
             token(iter_, _next_precedence, associativity::left_assoc, "left");
             ++_next_precedence;
         }
 
-        void right(const char_type* names_)
+        void right(const string_view& names_)
         {
-            lexer_iterator iter_(names_, str_end(names_), _token_lexer);
-
-            token(iter_, _next_precedence, associativity::right_assoc, "right");
-            ++_next_precedence;
-        }
-
-        void right(const string& names_)
-        {
-            lexer_iterator iter_(names_.c_str(), names_.c_str() + names_.size(),
+            lexer_iterator iter_(names_.data(), names_.data() + names_.size(),
                 _token_lexer);
 
             token(iter_, _next_precedence, associativity::right_assoc, "right");
             ++_next_precedence;
         }
 
-        void nonassoc(const char_type* names_)
+        void nonassoc(const string_view& names_)
         {
-            lexer_iterator iter_(names_, str_end(names_), _token_lexer);
-
-            token(iter_, _next_precedence, associativity::non_assoc,
-                "nonassoc");
-            ++_next_precedence;
-        }
-
-        void nonassoc(const string& names_)
-        {
-            lexer_iterator iter_(names_.c_str(), names_.c_str() + names_.size(),
+            lexer_iterator iter_(names_.data(), names_.data() + names_.size(),
                 _token_lexer);
 
             token(iter_, _next_precedence, associativity::non_assoc,
@@ -292,18 +262,9 @@ namespace parsertl
             ++_next_precedence;
         }
 
-        void precedence(const char_type* names_)
+        void precedence(const string_view& names_)
         {
-            lexer_iterator iter_(names_, str_end(names_), _token_lexer);
-
-            token(iter_, _next_precedence, associativity::precedence_assoc,
-                "precedence");
-            ++_next_precedence;
-        }
-
-        void precedence(const string& names_)
-        {
-            lexer_iterator iter_(names_.c_str(), names_.c_str() + names_.size(),
+            lexer_iterator iter_(names_.data(), names_.data() + names_.size(),
                 _token_lexer);
 
             token(iter_, _next_precedence, associativity::precedence_assoc,
@@ -317,14 +278,14 @@ namespace parsertl
             auto index_ = static_cast<id_type>(_grammar.size());
             const std::size_t old_size_ = _grammar.size();
 
-            validate(lhs_.c_str());
+            validate(lhs_);
 
             if (_terminals.find(lhs_) != _terminals.end())
             {
                 std::ostringstream ss_;
 
                 ss_ << "Rule ";
-                narrow(lhs_.c_str(), ss_);
+                narrow(lhs_, ss_);
                 ss_ << " is already defined as a TERMINAL.";
                 throw runtime_error(ss_.str());
             }
@@ -334,7 +295,7 @@ namespace parsertl
                 std::ostringstream ss_;
 
                 ss_ << "Rule ";
-                narrow(lhs_.c_str(), ss_);
+                narrow(lhs_, ss_);
                 ss_ << " is already defined as a generated rule.";
                 throw runtime_error(ss_.str());
             }
@@ -541,9 +502,9 @@ namespace parsertl
                 std::ostringstream ss_;
 
                 ss_ << "Syntax error in rule ";
-                narrow(lhs_.c_str(), ss_);
+                narrow(lhs_, ss_);
                 ss_ << '(' << iter_->first - rhs_.c_str() + 1 << "): '";
-                narrow(rhs_.c_str(), ss_);
+                narrow(rhs_, ss_);
                 ss_ << "'.";
                 throw runtime_error(ss_.str());
             }
@@ -575,7 +536,7 @@ namespace parsertl
                 std::ostringstream ss_;
 
                 ss_ << "Unknown token \"";
-                narrow(name_.c_str(), ss_);
+                narrow(name_, ss_);
                 ss_ << "\".";
                 throw runtime_error(ss_.str());
             }
@@ -599,9 +560,9 @@ namespace parsertl
             return name_;
         }
 
-        string name_from_nt_id(const std::size_t id_) const
+        string_view name_from_nt_id(const std::size_t id_) const
         {
-            string name_;
+            string_view name_;
 
             for (const auto& pair_ : _non_terminals)
             {
@@ -615,15 +576,9 @@ namespace parsertl
             return name_;
         }
 
-        void start(const char_type* start_)
+        void start(const string_view& start_)
         {
             validate(start_);
-            _start = start_;
-        }
-
-        void start(const string& start_)
-        {
-            validate(start_.c_str());
             _start = start_;
         }
 
@@ -695,10 +650,10 @@ namespace parsertl
                 if (!found_)
                 {
                     std::ostringstream ss_;
-                    const string name_ = pair_.first;
+                    const string_view name_ = pair_.first;
 
                     ss_ << '\'';
-                    narrow(name_.c_str(), ss_);
+                    narrow(name_, ss_);
                     ss_ << "' is an unused rule.";
                     throw runtime_error(ss_.str());
                 }
@@ -711,10 +666,10 @@ namespace parsertl
                 if (_nt_locations[i_]._first_production == npos())
                 {
                     std::ostringstream ss_;
-                    const string name_ = name_from_nt_id(i_);
+                    const string_view name_ = name_from_nt_id(i_);
 
                     ss_ << "Non-terminal '";
-                    narrow(name_.c_str(), ss_);
+                    narrow(name_, ss_);
                     ss_ << "' does not have any productions.";
                     throw runtime_error(ss_.str());
                 }
@@ -896,28 +851,23 @@ namespace parsertl
             }
         }
 
-        void validate(const char_type* name_) const
+        void validate(const string_view& name_) const
         {
-            const char_type* start_ = name_;
-
-            while (*name_)
+            for (const char_type c_ : name_)
             {
-                if (!(*name_ >= 'A' && *name_ <= 'Z') &&
-                    !(*name_ >= 'a' && *name_ <= 'z') &&
-                    *name_ != '_' && *name_ != '.' &&
-                    !(*name_ >= '0' && *name_ <= '9') &&
-                    *name_ != '-')
+                if (!(c_ >= 'A' && c_ <= 'Z') &&
+                    !(c_ >= 'a' && c_ <= 'z') &&
+                    c_ != '_' && c_ != '.' &&
+                    !(c_ >= '0' && c_ <= '9') &&
+                    c_ != '-')
                 {
                     std::ostringstream ss_;
 
                     ss_ << "Invalid name '";
-                    name_ = start_;
                     narrow(name_, ss_);
                     ss_ << "'.";
                     throw runtime_error(ss_.str());
                 }
-
-                ++name_;
             }
         }
 
@@ -931,13 +881,6 @@ namespace parsertl
         {
             return _non_terminals.insert(string_id_type_pair(str_,
                 static_cast<id_type>(_non_terminals.size()))).first->second;
-        }
-
-        const char_type* str_end(const char_type* str_)
-        {
-            while (*str_) ++str_;
-
-            return str_;
         }
 
         void push_production(const string& lhs_, const string& rhs_)
