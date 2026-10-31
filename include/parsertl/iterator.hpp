@@ -121,8 +121,11 @@ namespace parsertl
                 1 + std::count(start, _iter->first, '\n');
             const typename lexer_iterator::value_type::char_type
                 endl = { '\n' };
-            const std::size_t column = _iter->first - std::find_end(start,
-                _iter->first, &endl, &endl + 1);
+            const auto nl_ = std::find_end(start, _iter->first,
+                &endl, &endl + 1);
+            const std::size_t column = nl_ == _iter->first ?
+                static_cast<std::size_t>(_iter->first - start) + 1 :
+                static_cast<std::size_t>(_iter->first - nl_);
 
             return std::make_pair(line, column);
         }
