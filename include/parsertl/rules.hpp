@@ -839,8 +839,14 @@ namespace parsertl
                 token_ = iter_->str();
 
                 if (_terminals.find(token_) != _terminals.cend())
-                    throw runtime_error("token " + token_ +
-                        " is already defined.");
+                {
+                    std::ostringstream ss_;
+
+                    ss_ << "token ";
+                    narrow(token_, ss_);
+                    ss_ << " is already defined.";
+                    throw runtime_error(ss_.str());
+                }
 
                 id_ = insert_terminal(token_);
 
