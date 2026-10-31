@@ -21,16 +21,26 @@ namespace parsertl
     // Forward declarations:
     namespace details
     {
+        // A point in the input where the table has an action on '$'.
+        // This is only a *candidate* end of match (LALR lookaheads are
+        // merged, so '$' can be present when it is not really valid).
+        template<typename lexer_iterator, typename sm_type>
+        struct eoi_candidate
+        {
+            lexer_iterator _iter;
+            basic_match_results<sm_type> _results;
+        };
+
         template<typename lexer_iterator, typename sm_type>
         void next(lexer_iterator& iter_, const sm_type& sm_,
             basic_match_results<sm_type>& results_,
             std::set<typename sm_type::id_type>* prod_set_,
-            lexer_iterator& last_eoi_,
-            basic_match_results<sm_type>& last_results_);
+            std::vector<eoi_candidate<lexer_iterator, sm_type>>& candidates_);
         template<typename lexer_iterator, typename sm_type,
             typename token_vector>
         void next(lexer_iterator& iter_, const sm_type& sm_,
-            basic_match_results<sm_type>& results_, lexer_iterator& last_eoi_,
+            basic_match_results<sm_type>& results_,
+            std::vector<lexer_iterator>& candidates_,
             token_vector& productions_);
         template<typename lexer_iterator, typename sm_type>
         bool parse(lexer_iterator& iter_, const sm_type& sm_,
@@ -117,10 +127,10 @@ namespace parsertl
     {
         bool hit_ = false;
         lexer_iterator curr_ = iter_;
-        lexer_iterator last_eoi_;
         // results_ defined here so that allocated memory can be reused.
         basic_match_results<sm_type> results_;
-        basic_match_results<sm_type> last_results_;
+        std::vector<details::eoi_candidate<lexer_iterator, sm_type>>
+            candidates_;
 
         end_ = lexer_iterator();
 
@@ -132,13 +142,12 @@ namespace parsertl
             }
 
             results_.reset(curr_->id, sm_);
-            last_results_.clear();
+            candidates_.clear();
 
             while (results_.entry.action != action::accept &&
                 results_.entry.action != action::error)
             {
-                details::next(curr_, sm_, results_, prod_set_, last_eoi_,
-                    last_results_);
+                details::next(curr_, sm_, results_, prod_set_, candidates_);
             }
 
             hit_ = results_.entry.action == action::accept;
@@ -148,18 +157,28 @@ namespace parsertl
                 end_ = curr_;
                 break;
             }
-            else if (last_eoi_->id != 0)
+
+            // Try each candidate, longest first. A candidate sitting at
+            // end of input has already been tried by the loop above.
+            for (auto i_ = candidates_.rbegin(), e_ = candidates_.rend();
+                i_ != e_; ++i_)
             {
+                if (i_->_iter->id == 0)
+                    continue;
+
                 lexer_iterator eoi_;
 
-                hit_ = details::parse(eoi_, sm_, last_results_, prod_set_);
+                hit_ = details::parse(eoi_, sm_, i_->_results, prod_set_);
 
                 if (hit_)
                 {
-                    end_ = last_eoi_;
+                    end_ = i_->_iter;
                     break;
                 }
             }
+
+            if (hit_)
+                break;
 
             if (iter_->id != 0)
                 ++iter_;
@@ -177,7 +196,7 @@ namespace parsertl
     {
         bool hit_ = false;
         lexer_iterator curr_ = iter_;
-        lexer_iterator last_eoi_;
+        std::vector<lexer_iterator> candidates_;
         // results_ and productions_ defined here so that
         // allocated memory can be reused.
         basic_match_results<sm_type> results_;
@@ -194,11 +213,13 @@ namespace parsertl
 
             results_.reset(curr_->id, sm_);
             productions_.clear();
+            candidates_.clear();
 
             while (results_.entry.action != action::accept &&
                 results_.entry.action != action::error)
             {
-                details::next(curr_, sm_, results_, last_eoi_, productions_);
+                details::next(curr_, sm_, results_, candidates_,
+                    productions_);
             }
 
             hit_ = results_.entry.action == action::accept;
@@ -207,7 +228,7 @@ namespace parsertl
             {
                 if (prod_map_)
                 {
-                    lexer_iterator again_(iter_->first, last_eoi_->first,
+                    lexer_iterator again_(iter_->first, curr_->first,
                         iter_.sm());
 
                     results_.reset(iter_->id, sm_);
@@ -219,22 +240,36 @@ namespace parsertl
                 end_ = curr_;
                 break;
             }
-            else if (last_eoi_->id != 0)
+
+            // Try each candidate, longest first. A candidate sitting at
+            // end of input has already been tried by the loop above.
+            for (auto i_ = candidates_.rbegin(), e_ = candidates_.rend();
+                i_ != e_; ++i_)
             {
-                lexer_iterator again_(iter_->first, last_eoi_->first,
+                if ((*i_)->id == 0)
+                    continue;
+
+                lexer_iterator again_(iter_->first, (*i_)->first,
                     iter_.sm());
 
                 results_.reset(iter_->id, sm_);
                 productions_.clear();
+
+                if (prod_map_)
+                    prod_map_->clear();
+
                 hit_ = details::parse(again_, sm_, results_, productions_,
                     prod_map_);
 
                 if (hit_)
                 {
-                    end_ = last_eoi_;
+                    end_ = *i_;
                     break;
                 }
             }
+
+            if (hit_)
+                break;
 
             if (iter_->id != 0)
                 ++iter_;
@@ -252,7 +287,7 @@ namespace parsertl
     {
         bool hit_ = false;
         lexer_iterator curr_ = iter_;
-        lexer_iterator last_eoi_;
+        std::vector<lexer_iterator> candidates_;
         // results_ and productions_ defined here so that
         // allocated memory can be reused.
         basic_match_results<sm_type> results_;
@@ -269,11 +304,13 @@ namespace parsertl
 
             results_.reset(curr_->id, sm_);
             productions_.clear();
+            candidates_.clear();
 
             while (results_.entry.action != action::accept &&
                 results_.entry.action != action::error)
             {
-                details::next(curr_, sm_, results_, last_eoi_, productions_);
+                details::next(curr_, sm_, results_, candidates_,
+                    productions_);
             }
 
             hit_ = results_.entry.action == action::accept;
@@ -282,7 +319,7 @@ namespace parsertl
             {
                 if (prod_vec_)
                 {
-                    lexer_iterator again_(iter_->first, last_eoi_->first,
+                    lexer_iterator again_(iter_->first, curr_->first,
                         iter_.sm());
 
                     results_.reset(iter_->id, sm_);
@@ -294,22 +331,36 @@ namespace parsertl
                 end_ = curr_;
                 break;
             }
-            else if (last_eoi_->id != 0)
+
+            // Try each candidate, longest first. A candidate sitting at
+            // end of input has already been tried by the loop above.
+            for (auto i_ = candidates_.rbegin(), e_ = candidates_.rend();
+                i_ != e_; ++i_)
             {
-                lexer_iterator again_(iter_->first, last_eoi_->first,
+                if ((*i_)->id == 0)
+                    continue;
+
+                lexer_iterator again_(iter_->first, (*i_)->first,
                     iter_.sm());
 
                 results_.reset(iter_->id, sm_);
                 productions_.clear();
+
+                if (prod_vec_)
+                    prod_vec_->clear();
+
                 hit_ = details::parse(again_, sm_, results_, productions_,
                     prod_vec_);
 
                 if (hit_)
                 {
-                    end_ = last_eoi_;
+                    end_ = *i_;
                     break;
                 }
             }
+
+            if (hit_)
+                break;
 
             if (iter_->id != 0)
                 ++iter_;
@@ -326,8 +377,7 @@ namespace parsertl
         void next(lexer_iterator& iter_, const sm_type& sm_,
             basic_match_results<sm_type>& results_,
             std::set<typename sm_type::id_type>* prod_set_,
-            lexer_iterator& last_eoi_,
-            basic_match_results<sm_type>& last_results_)
+            std::vector<eoi_candidate<lexer_iterator, sm_type>>& candidates_)
         {
             switch (results_.entry.action)
             {
@@ -357,10 +407,9 @@ namespace parsertl
 
                 if (eoi_.action != action::error)
                 {
-                    last_eoi_ = iter_;
-                    last_results_.stack = results_.stack;
-                    last_results_.token_id = 0;
-                    last_results_.entry = eoi_;
+                    candidates_.push_back({ iter_, results_ });
+                    candidates_.back()._results.token_id = 0;
+                    candidates_.back()._results.entry = eoi_;
                 }
 
                 break;
@@ -410,7 +459,8 @@ namespace parsertl
         template<typename lexer_iterator, typename sm_type,
             typename token_vector>
         void next(lexer_iterator& iter_, const sm_type& sm_,
-            basic_match_results<sm_type>& results_, lexer_iterator& last_eoi_,
+            basic_match_results<sm_type>& results_,
+            std::vector<lexer_iterator>& candidates_,
             token_vector& productions_)
         {
             switch (results_.entry.action)
@@ -442,9 +492,7 @@ namespace parsertl
                 }
 
                 if (eoi_.action != action::error)
-                {
-                    last_eoi_ = iter_;
-                }
+                    candidates_.push_back(iter_);
 
                 break;
             }
