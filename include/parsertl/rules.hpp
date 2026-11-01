@@ -202,6 +202,7 @@ namespace parsertl
 
         void clear()
         {
+            // Deliberately reset _flags to default
             _flags = 0;
             _next_precedence = 1;
 
