@@ -220,7 +220,7 @@ Four
 To search a string with captures, switch `match()` for `search()` above:
 
 ```cpp
-parsertl::search(iter, gsm, captures)
+parsertl::search(iter, end, gsm, captures)
 ```
 
 The `captures` argument can be omitted if it is not required in both cases.
