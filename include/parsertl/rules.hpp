@@ -312,6 +312,11 @@ namespace parsertl
             { '%', 'e', 'm', 'p', 't', 'y', ' ', '|', ' ', '\0' };
             static const std::array<char_type, 4> or_ =
             { ' ', '|', ' ', '\0' };
+            const auto counter_iter_ = _new_rule_ids.find(lhs_);
+            std::size_t counter_ = counter_iter_ == _new_rule_ids.end() ?
+                0 :
+                counter_iter_->second;
+            std::set<string> generated_rules_;
 
             bison_next(_ebnf_tables, iter_, results_);
 
@@ -397,14 +402,13 @@ namespace parsertl
                     {
                         // rhs: '[' rhs_or ']'
                         // rhs: rhs '?'
-                        std::size_t& counter_ = _new_rule_ids[lhs_];
                         std::basic_ostringstream<char_type> ss_;
                         std::pair<string, string> pair_;
 
                         ++counter_;
                         lexertl::stream_num(counter_, ss_);
                         pair_.first = lhs_ + char_type('_') + ss_.str();
-                        _generated_rules.insert(pair_.first);
+                        generated_rules_.insert(pair_.first);
                         pair_.second = &empty_or_.front() + rhs_stack_.top();
                         rhs_stack_.top() = pair_.first;
                         new_rules_.push(pair_);
@@ -415,14 +419,13 @@ namespace parsertl
                     {
                         // rhs: '{' rhs_or '}'
                         // rhs: rhs '*'
-                        std::size_t& counter_ = _new_rule_ids[lhs_];
                         std::basic_ostringstream<char_type> ss_;
                         std::pair<string, string> pair_;
 
                         ++counter_;
                         lexertl::stream_num(counter_, ss_);
                         pair_.first = lhs_ + char_type('_') + ss_.str();
-                        _generated_rules.insert(pair_.first);
+                        generated_rules_.insert(pair_.first);
                         pair_.second = &empty_or_.front() + pair_.first +
                             char_type(' ') + rhs_stack_.top();
                         rhs_stack_.top() = pair_.first;
@@ -434,14 +437,13 @@ namespace parsertl
                     {
                         // rhs: '{' rhs_or '}' '-'
                         // rhs: rhs '+'
-                        std::size_t& counter_ = _new_rule_ids[lhs_];
                         std::basic_ostringstream<char_type> ss_;
                         std::pair<string, string> pair_;
 
                         ++counter_;
                         lexertl::stream_num(counter_, ss_);
                         pair_.first = lhs_ + char_type('_') + ss_.str();
-                        _generated_rules.insert(pair_.first);
+                        generated_rules_.insert(pair_.first);
                         pair_.second = rhs_stack_.top() + &or_.front() +
                             pair_.first + char_type(' ') + rhs_stack_.top();
                         rhs_stack_.top() = pair_.first;
@@ -451,14 +453,13 @@ namespace parsertl
                     case ebnf_indexes::bracketed_idx:
                     {
                         // rhs: '(' rhs_or ')'
-                        std::size_t& counter_ = _new_rule_ids[lhs_];
                         std::basic_ostringstream<char_type> ss_;
                         std::pair<string, string> pair_;
 
                         ++counter_;
                         lexertl::stream_num(counter_, ss_);
                         pair_.first = lhs_ + char_type('_') + ss_.str();
-                        _generated_rules.insert(pair_.first);
+                        generated_rules_.insert(pair_.first);
                         pair_.second = rhs_stack_.top();
 
                         if (_flags & *rule_flags::enable_captures)
@@ -482,10 +483,20 @@ namespace parsertl
                         const std::size_t size_ =
                             _ebnf_tables.yyr2[results_.entry.param];
                         const std::size_t idx_ = productions_.size() - size_;
-                        const token_t& token_ = productions_[idx_];
+                        const token_t& prec_ = productions_[idx_];
+                        const string name_ = productions_[idx_ + 1].str();
 
-                        rhs_stack_.push(token_.str() + char_type(' ') +
-                            productions_[idx_ + 1].str());
+                        if (_terminals.find(name_) == _terminals.end())
+                        {
+                            std::ostringstream ss_;
+
+                            ss_ << "Unknown %prec terminal ";
+                            narrow(name_, ss_);
+                            ss_ << '.';
+                            throw runtime_error(ss_.str());
+                        }
+
+                        rhs_stack_.push(prec_.str() + char_type(' ') + name_);
                         break;
                     }
                     default:
@@ -524,6 +535,11 @@ namespace parsertl
                 resize_captures();
             }
 
+            if (counter_ > 0)
+                _new_rule_ids[lhs_] = counter_;
+
+            _generated_rules.insert(generated_rules_.begin(),
+                generated_rules_.end());
             return index_;
         }
 
