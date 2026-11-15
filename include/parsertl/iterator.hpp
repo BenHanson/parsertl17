@@ -1,5 +1,5 @@
 // iterator.hpp
-// Copyright (c) 2022-2023 Ben Hanson (http://www.benhanson.net/)
+// Copyright (c) 2022-2026 Ben Hanson (http://www.benhanson.net/)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file licence_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -114,20 +114,32 @@ namespace parsertl
             return _iter;
         }
 
-        std::pair<std::size_t, std::size_t> line_column(typename lexer_iterator::
-            data_iterator& start) const
+        std::pair<std::size_t, std::size_t> line_column(const typename lexer_iterator::
+            data_iterator& start_, const std::size_t spaces_per_tab_ = 4) const
         {
-            const std::size_t line =
-                1 + std::count(start, _iter->first, '\n');
+            const std::size_t line_ =
+                1 + std::count(start_, _iter->first, '\n');
             const typename lexer_iterator::value_type::char_type
-                endl = { '\n' };
-            const auto nl_ = std::find_end(start, _iter->first,
-                &endl, &endl + 1);
-            const std::size_t column = nl_ == _iter->first ?
-                static_cast<std::size_t>(_iter->first - start) + 1 :
-                static_cast<std::size_t>(_iter->first - nl_);
+                endl_ = { '\n' };
+            const auto nl_ = std::find_end(start_, _iter->first,
+                &endl_, &endl_ + 1);
+            const typename lexer_iterator::data_iterator bol_ =
+                nl_ == _iter->first ?
+                start_ :
+                nl_ + 1;
+            std::size_t idx_ = 0;
+            std::size_t column_ = 0;
 
-            return std::make_pair(line, column);
+            for (typename lexer_iterator::data_iterator ptr_ = bol_;
+                ptr_ != _iter->first; ++ptr_)
+            {
+                if (*ptr_ == '\t')
+                    column_ += spaces_per_tab_ - column_ % spaces_per_tab_;
+                else
+                    ++column_;
+            }
+
+            return std::make_pair(line_, column_ + 1);
         }
 
     private:
