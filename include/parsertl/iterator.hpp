@@ -127,7 +127,6 @@ namespace parsertl
                 nl_ == _iter->first ?
                 start_ :
                 nl_ + 1;
-            std::size_t idx_ = 0;
             std::size_t column_ = 0;
 
             for (typename lexer_iterator::data_iterator ptr_ = bol_;
