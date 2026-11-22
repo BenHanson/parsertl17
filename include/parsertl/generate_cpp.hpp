@@ -45,15 +45,20 @@ namespace parsertl
 
             if (!sm_._captures.empty())
             {
-                output_tabs(1, os_);
-                os_ << "gsm._captures.push_back({ ";
-
-                for (const auto& capture_ : sm_._captures)
+                for (const auto& pair_ : sm_._captures)
                 {
-                    os_ << capture_.first;
-                }
+                    output_tabs(1, os_);
+                    os_ << "gsm._captures.push_back({" <<
+                        pair_.first << ", {} });\n";
 
-                os_ << " } });\n";
+                    for (const auto& capture : pair_.second)
+                    {
+                        output_tabs(1, os_);
+                        os_ << "gsm._captures.back().second.emplace_back(" <<
+                            capture.first << ", " << capture.second <<
+                            ");\n";
+                    }
+                }
             }
 
             for (const auto& row : sm_._table)
